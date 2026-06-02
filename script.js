@@ -1,4 +1,4 @@
-```javascript
+
 const ACCURATE_SPEED_DATA = {
     1: 0.00,
     2: 9.02,
@@ -339,4 +339,4 @@ stopButtons.forEach(btn=>{
 });
 
 refreshPanelLayout();
-```
+
