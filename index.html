@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -8,6 +9,7 @@
 </head>
 <body>
 
+    <!-- 현재 위치 선택 -->
     <div id="current-floor-board">
         <span class="board-label">CURRENT FLOOR</span>
         <select id="floor-picker">
@@ -22,37 +24,63 @@
         </select>
     </div>
 
-    <div class="elevator-panel">
-        <div class="screw top"></div>
+    <!-- 전체 레이아웃 -->
+    <div class="main-layout">
 
-        <div class="black-screen">
-            <div class="led-arrow" id="display-arrow">─</div>
-            <div class="led-number" id="display-number">01</div>
-            <div class="led-timer" id="display-timer"></div>
+        <!-- 엘리베이터 패널 -->
+        <div class="elevator-panel">
+
+            <div class="screw top"></div>
+
+            <div class="black-screen">
+                <div class="led-arrow" id="display-arrow">─</div>
+                <div class="led-number" id="display-number">01</div>
+                <div class="led-timer" id="display-timer"></div>
+            </div>
+
+            <div class="button-set">
+                <button id="btn-up" class="elevator-physical-btn" aria-label="Up">
+                    <div class="btn-inner">
+                        <svg viewBox="0 0 100 100">
+                            <polygon points="50,25 85,75 15,75"/>
+                        </svg>
+                    </div>
+                </button>
+
+                <button id="btn-down" class="elevator-physical-btn" aria-label="Down">
+                    <div class="btn-inner">
+                        <svg viewBox="0 0 100 100">
+                            <polygon points="15,25 85,25 50,75"/>
+                        </svg>
+                    </div>
+                </button>
+            </div>
+
+            <div class="screw bottom"></div>
+
         </div>
 
-        <div class="button-set">
-            <button id="btn-up" class="elevator-physical-btn" aria-label="Up">
-                <div class="btn-inner">
-                    <svg viewBox="0 0 100 100">
-                        <polygon points="50,25 85,75 15,75"/>
-                    </svg>
-                </div>
-            </button>
+        <!-- 정차층 패널 -->
+        <div id="stop-panel">
 
-            <button id="btn-down" class="elevator-physical-btn" aria-label="Down">
-                <div class="btn-inner">
-                    <svg viewBox="0 0 100 100">
-                        <polygon points="15,25 85,25 50,75"/>
-                    </svg>
-                </div>
-            </button>
+            <div class="stop-title">
+                STOP
+            </div>
+
+            <button class="stop-floor-btn" data-floor="2">2F</button>
+            <button class="stop-floor-btn" data-floor="3">3F</button>
+            <button class="stop-floor-btn" data-floor="4">4F</button>
+            <button class="stop-floor-btn" data-floor="5">5F</button>
+            <button class="stop-floor-btn" data-floor="6">6F</button>
+            <button class="stop-floor-btn" data-floor="7">7F</button>
+            <button class="stop-floor-btn" data-floor="8">8F</button>
+
         </div>
 
-        <div class="screw bottom"></div>
     </div>
 
     <script src="script.js"></script>
 
 </body>
 </html>
+```
