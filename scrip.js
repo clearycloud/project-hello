@@ -1,310 +1,342 @@
+```javascript
 const ACCURATE_SPEED_DATA = {
-1: 0.00,
-2: 9.02,
-3: 12.01,
-4: 16.31,
-5: 19.88,
-6: 22.27,
-7: 25.84,
-8: 29.25
+    1: 0.00,
+    2: 9.02,
+    3: 12.01,
+    4: 16.31,
+    5: 19.88,
+    6: 22.27,
+    7: 25.84,
+    8: 29.25
 };
+
+const STOP_DELAY = 3;
 
 let deviceState = {
-elevatorFloor: 1,
-isOperating: false,
-timerInterval: null,
-movementTimeout: null,
-
-```
-finalDestination: null,
-intermediateStop: null,
-stopDelay: 3
-```
-
+    elevatorFloor: 1,
+    isOperating: false,
+    destinationFloor: null,
+    selectedStops: [],
+    timerInterval: null
 };
 
-const uiArrow = document.getElementById('display-arrow');
-const uiNumber = document.getElementById('display-number');
-const uiTimer = document.getElementById('display-timer');
+const uiArrow = document.getElementById("display-arrow");
+const uiNumber = document.getElementById("display-number");
+const uiTimer = document.getElementById("display-timer");
 
-const upButton = document.getElementById('btn-up');
-const downButton = document.getElementById('btn-down');
-const floorPicker = document.getElementById('floor-picker');
+const upButton = document.getElementById("btn-up");
+const downButton = document.getElementById("btn-down");
+const floorPicker = document.getElementById("floor-picker");
+
+const stopButtons =
+    document.querySelectorAll(".stop-floor-btn");
 
 function refreshPanelLayout() {
-uiNumber.textContent =
-String(deviceState.elevatorFloor).padStart(2, '0');
+    uiNumber.textContent =
+        String(deviceState.elevatorFloor)
+        .padStart(2, "0");
 }
 
 function travelTime(fromFloor, toFloor) {
-return Math.abs(
-ACCURATE_SPEED_DATA[toFloor] -
-ACCURATE_SPEED_DATA[fromFloor]
-);
-}
-
-function updateRemainingTime() {
-
-```
-let remain = 0;
-
-if (
-    deviceState.intermediateStop !== null &&
-    deviceState.elevatorFloor !== deviceState.intermediateStop
-) {
-    remain += travelTime(
-        deviceState.elevatorFloor,
-        deviceState.intermediateStop
-    );
-
-    remain += deviceState.stopDelay;
-
-    remain += travelTime(
-        deviceState.intermediateStop,
-        deviceState.finalDestination
-    );
-}
-else if (
-    deviceState.finalDestination !== null &&
-    deviceState.elevatorFloor !== deviceState.finalDestination
-) {
-    remain += travelTime(
-        deviceState.elevatorFloor,
-        deviceState.finalDestination
+    return Math.abs(
+        ACCURATE_SPEED_DATA[toFloor] -
+        ACCURATE_SPEED_DATA[fromFloor]
     );
 }
 
-return remain;
-```
+function getRoute() {
 
-}
+    const start =
+        deviceState.elevatorFloor;
 
-function countdownLoop() {
+    const destination =
+        deviceState.destinationFloor;
 
-```
-deviceState.timerInterval = setInterval(() => {
+    let route = [];
 
-    let remain = updateRemainingTime();
+    if (destination > start) {
 
-    if (remain <= 0.1) {
-        return;
+        route =
+            deviceState.selectedStops
+            .filter(f =>
+                f > start &&
+                f < destination
+            )
+            .sort((a,b)=>a-b);
+
+    } else {
+
+        route =
+            deviceState.selectedStops
+            .filter(f =>
+                f < start &&
+                f > destination
+            )
+            .sort((a,b)=>b-a);
     }
 
-    uiTimer.textContent =
-        `${remain.toFixed(2)}초 뒤\n도착`;
+    route.push(destination);
 
-}, 100);
-```
+    return route;
+}
+
+function calculateRemainingTime() {
+
+    if (
+        !deviceState.isOperating ||
+        deviceState.destinationFloor === null
+    ) {
+        return 0;
+    }
+
+    let current =
+        deviceState.elevatorFloor;
+
+    let total = 0;
+
+    const route = getRoute();
+
+    route.forEach((floor,index)=>{
+
+        total +=
+            travelTime(current,floor);
+
+        if(index < route.length - 1){
+            total += STOP_DELAY;
+        }
+
+        current = floor;
+    });
+
+    return total;
+}
+
+function startTimer() {
+
+    clearInterval(
+        deviceState.timerInterval
+    );
+
+    deviceState.timerInterval =
+        setInterval(()=>{
+
+            const remain =
+                calculateRemainingTime();
+
+            uiTimer.textContent =
+                `${remain.toFixed(2)}초 뒤\n도착`;
+
+        },100);
 
 }
 
-function completeOperation(clickedButton) {
+async function moveToFloor(targetFloor){
 
-```
-clearInterval(deviceState.timerInterval);
-
-uiArrow.textContent = "─";
-
-uiTimer.textContent =
-    "0.00초 뒤\n도착 완료";
-
-setTimeout(() => {
-
-    uiTimer.textContent = "";
-
-    clickedButton.classList.remove("active");
-
-    deviceState.isOperating = false;
-    deviceState.finalDestination = null;
-    deviceState.intermediateStop = null;
-
-}, 2500);
-```
-
-}
-
-function moveElevatorSequence(clickedButton) {
-
-```
-const destination =
-    deviceState.finalDestination;
-
-const stopFloor =
-    deviceState.intermediateStop;
-
-if (
-    stopFloor !== null &&
-    stopFloor !== destination &&
-    stopFloor !== deviceState.elevatorFloor
-) {
-
-    const firstMoveTime =
-        travelTime(
-            deviceState.elevatorFloor,
-            stopFloor
+    const floors =
+        Math.abs(
+            targetFloor -
+            deviceState.elevatorFloor
         );
 
-    setTimeout(() => {
+    const totalTime =
+        travelTime(
+            deviceState.elevatorFloor,
+            targetFloor
+        );
 
-        deviceState.elevatorFloor =
-            stopFloor;
+    const interval =
+        (totalTime / floors) * 1000;
 
-        refreshPanelLayout();
+    const direction =
+        targetFloor >
+        deviceState.elevatorFloor
+        ? 1
+        : -1;
 
-        uiTimer.textContent =
-            `중간 호출\n${stopFloor}층 정차`;
+    return new Promise(resolve=>{
 
-        setTimeout(() => {
+        let moved = 0;
 
-            const secondMoveTime =
-                travelTime(
-                    stopFloor,
-                    destination
-                );
+        const step =
+            setInterval(()=>{
 
-            uiArrow.textContent =
-                destination > stopFloor
-                ? '↑'
-                : '↓';
-
-            setTimeout(() => {
-
-                deviceState.elevatorFloor =
-                    destination;
+                deviceState.elevatorFloor +=
+                    direction;
 
                 refreshPanelLayout();
 
-                completeOperation(
-                    clickedButton
-                );
+                moved++;
 
-            }, secondMoveTime * 1000);
+                if(moved >= floors){
 
-        }, deviceState.stopDelay * 1000);
+                    clearInterval(step);
 
-    }, firstMoveTime * 1000);
+                    resolve();
 
-} else {
+                }
 
-    const moveTime =
-        travelTime(
-            deviceState.elevatorFloor,
-            destination
-        );
+            },interval);
 
-    setTimeout(() => {
-
-        deviceState.elevatorFloor =
-            destination;
-
-        refreshPanelLayout();
-
-        completeOperation(
-            clickedButton
-        );
-
-    }, moveTime * 1000);
-}
-```
+    });
 
 }
 
-function processCallSignal(dirType) {
+async function startOperation(clickedButton){
 
-```
-if (deviceState.isOperating) return;
+    const route =
+        getRoute();
 
-const userTargetFloor =
-    parseInt(floorPicker.value);
+    for(let i=0;i<route.length;i++){
 
-if (
-    deviceState.elevatorFloor ===
-    userTargetFloor
-) {
+        const floor =
+            route[i];
+
+        uiArrow.textContent =
+            floor >
+            deviceState.elevatorFloor
+            ? "↑"
+            : "↓";
+
+        await moveToFloor(floor);
+
+        if(i < route.length - 1){
+
+            uiTimer.textContent =
+                `${floor}층 정차\n3초 대기`;
+
+            await new Promise(r=>
+                setTimeout(
+                    r,
+                    STOP_DELAY * 1000
+                )
+            );
+        }
+    }
+
+    clearInterval(
+        deviceState.timerInterval
+    );
+
+    uiArrow.textContent = "─";
 
     uiTimer.textContent =
-        "이미 현재 층에\n대기중입니다.";
+        "도착 완료";
 
-    setTimeout(() => {
+    stopButtons.forEach(btn=>{
+        btn.classList.remove("active");
+    });
+
+    deviceState.selectedStops = [];
+    deviceState.destinationFloor = null;
+
+    setTimeout(()=>{
+
         uiTimer.textContent = "";
-    }, 2000);
 
-    return;
+        clickedButton.classList.remove(
+            "active"
+        );
+
+        deviceState.isOperating = false;
+
+    },2000);
 }
 
-deviceState.isOperating = true;
+function processCallSignal(dirType){
 
-deviceState.finalDestination =
-    userTargetFloor;
+    if(deviceState.isOperating){
+        return;
+    }
 
-const clickedButton =
-    dirType === 'up'
-    ? upButton
-    : downButton;
+    const targetFloor =
+        parseInt(
+            floorPicker.value
+        );
 
-clickedButton.classList.add('active');
+    if(
+        targetFloor ===
+        deviceState.elevatorFloor
+    ){
 
-uiArrow.textContent =
-    userTargetFloor >
-    deviceState.elevatorFloor
-    ? '↑'
-    : '↓';
+        uiTimer.textContent =
+            "이미 현재 층";
 
-countdownLoop();
+        setTimeout(()=>{
+            uiTimer.textContent = "";
+        },1500);
 
-moveElevatorSequence(
-    clickedButton
-);
-```
+        return;
+    }
 
+    deviceState.isOperating = true;
+
+    deviceState.destinationFloor =
+        targetFloor;
+
+    const clickedButton =
+        dirType === "up"
+        ? upButton
+        : downButton;
+
+    clickedButton.classList.add(
+        "active"
+    );
+
+    startTimer();
+
+    startOperation(
+        clickedButton
+    );
 }
 
 upButton.addEventListener(
-'click',
-() => processCallSignal('up')
+    "click",
+    ()=>processCallSignal("up")
 );
 
 downButton.addEventListener(
-'click',
-() => processCallSignal('down')
+    "click",
+    ()=>processCallSignal("down")
 );
 
-window.addIntermediateStop =
-function(floor) {
+stopButtons.forEach(btn=>{
 
-```
-if (!deviceState.isOperating) {
-    console.log(
-        "현재 운행중이 아닙니다."
+    btn.addEventListener(
+        "click",
+        ()=>{
+
+            const floor =
+                parseInt(
+                    btn.dataset.floor
+                );
+
+            const index =
+                deviceState.selectedStops
+                .indexOf(floor);
+
+            if(index >= 0){
+
+                deviceState.selectedStops
+                .splice(index,1);
+
+                btn.classList.remove(
+                    "active"
+                );
+
+            }else{
+
+                deviceState.selectedStops
+                .push(floor);
+
+                btn.classList.add(
+                    "active"
+                );
+            }
+
+        }
     );
-    return;
-}
 
-if (
-    floor < 1 ||
-    floor > 8
-) {
-    console.log(
-        "1~8층만 입력 가능합니다."
-    );
-    return;
-}
-
-if (
-    floor ===
-    deviceState.finalDestination
-) {
-    return;
-}
-
-deviceState.intermediateStop =
-    floor;
-
-console.log(
-    `${floor}층 중간 호출 등록 완료`
-);
-```
-
-};
+});
 
 refreshPanelLayout();
+```
